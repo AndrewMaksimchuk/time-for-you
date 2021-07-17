@@ -1,0 +1,10 @@
+.settings {
+	display: flex;
+	flex-direction: column;
+}
+
+.additional-features {
+	display: flex;
+	flex-wrap: wrap;
+	align-items: baseline;
+}

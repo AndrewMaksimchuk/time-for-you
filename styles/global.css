@@ -1,0 +1,39 @@
+:root {
+	--size: 5px;
+
+	/* COLORS */
+	--color-1: #FAF3F3;
+	--color-2: #E1E5EA;
+	--color-3: #A7BBC7;
+	--color-4: #DA7F8F;
+}
+
+* {
+	margin: 0;
+	padding: var(--size);
+	text-decoration: none;
+	list-style: none;
+	border-radius: var(--size);
+	border: none;
+	color: var(--color-3);
+}
+
+body {
+	background-color: var(--color-1);
+	overflow: hidden;
+}
+
+h1, h2, h3, h4, h5, h6 {
+	color: var(--color-3);
+}
+
+label:hover {
+	cursor: pointer;
+	text-decoration: underline;
+}
+
+button:hover {
+	color: var(--color-4);
+	cursor: pointer;
+	background-color: var(--color-2);
+}

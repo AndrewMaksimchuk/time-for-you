@@ -1,0 +1,176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<title>Settings</title>
+	<link rel="stylesheet" href="../../styles/global.css">
+	<link rel="stylesheet" href="settings.css">
+	<script src="../../libs/vue.global.js"></script>
+</head>
+<body class="body">
+	<h1>Settings</h1>
+	<div class="app" id="app"></div>
+	<script>
+		const fs = require('fs');
+		const path = require('path');
+		const { ipcRenderer } = require('electron');
+
+		const pathToSettingsFile = path.join(process.cwd(), 'settings.json');
+
+		let settingsFile = null;
+		try {
+			settingsFile = require(pathToSettingsFile);
+		} catch(err) {
+			console.error(err);
+		}
+
+		const app = Vue.createApp({
+			data() {
+				return {
+					showTime: null,
+					hideTime: null,
+				}
+			},
+			computed: {
+				showTimeNumber() {
+					return parseInt(this.showTime);
+				},
+				hideTimeNumber() {
+					return parseInt(this.hideTime);
+				},
+			},
+			template: 
+				`
+				<section class="settings">
+					<label for="showTime">Set the time(minutes) for a short break: </label>
+					<input 
+						type="number" 
+						min="1" 
+						max="60"
+						id="showTime" 
+						v-model="showTime">
+					<label for="hideTime">Set the time(minutes), how long you see the layout message: </label>
+					<input 
+						type="number" 
+						min="1" 
+						max="60"
+						id="hideTime" 
+						v-model="hideTime">
+					<SelectAdditionalFeatures />
+					<ButtonSaveClose 
+						:showTime="showTimeNumber"
+						:hideTime="hideTimeNumber"/>
+				</section>
+				`,
+			created() {
+				if (settingsFile) {
+					this.showTime = settingsFile.showLayout;
+					this.hideTime = settingsFile.hideLayout;
+				}
+			},
+
+		});
+
+		app.component('ButtonSaveClose', {
+			data() {
+				return {
+					title: 'Save and close settings',
+				};
+			},
+			props: {
+				showTime: {
+					type: Number,
+					required: true,
+				},
+				hideTime: {
+					type: Number,
+					required: true,
+				},
+			},
+			template: '<button @click="saveAndClose">{{ title }}</button>',
+			methods: {
+				saveAndClose() {
+					settingsFile.showLayout = this.showTime;
+					settingsFile.hideLayout = this.hideTime;
+					try {
+					  const data = fs.writeFileSync('./settings.json', JSON.stringify(settingsFile));
+					} catch (err) {
+					  console.error(err);
+					}
+					ipcRenderer.send('settings', { type: 'close' });
+				},
+			},
+		});
+
+		app.component('AdditionalFeaturesItem', {
+			props: {
+				index: {
+					type: Number,
+					required: true,
+				},
+				idText: {
+					type: String,
+					required: true,
+				},
+				labelText: {
+					type: String,
+					required: true,
+				},
+				isChecked: {
+					type: Boolean,
+					required: true,
+				},
+			},
+			template: `
+				<div>
+					<input 
+						type="checkbox" 
+						:id="idText" 
+						:value="isChecked" 
+						:checked="isChecked" 
+						@click="changeFeatureSetup($event)">
+					<label :for="idText">{{ labelText }}</label>
+				</div>`,
+			methods: {
+				changeFeatureSetup(e) {
+					let isEnable = null;
+					const value = e.target.value;
+					value === 'true' ? isEnable = false : isEnable = true;
+					if (settingsFile) {
+						settingsFile.additionalFeatures[this.index].isEnable = isEnable;
+					}
+				},
+			},
+		});
+
+		app.component('SelectAdditionalFeatures', {
+			data() {
+				return {
+					additionalFeatures: null,
+				};
+			},
+			template: `
+				<div class="additional-features">
+					
+					<AdditionalFeaturesItem 
+						v-for="(item, index) in additionalFeatures" 
+						:key="index" 
+						:index="index"
+						:idText="item.idText" 
+						:labelText="item.labelText"
+						:isChecked="item.isEnable"/>
+				</div>
+			`,
+			created() {
+				if (settingsFile) {
+					this.additionalFeatures = settingsFile.additionalFeatures;
+				}
+			},
+		});
+
+		const vm = app.mount('#app');
+	</script>
+</body>
+</html>
+

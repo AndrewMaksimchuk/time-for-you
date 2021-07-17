@@ -1,0 +1,86 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<meta charset="UTF-8">
+	<meta name="viewport" content="width=device-width, initial-scale=1.0">
+	<link rel="stylesheet" href="styles/global.css">
+	<link rel="stylesheet" href="index.css">
+	<title>Time for you</title>
+</head>
+<body class="body">
+
+	<article class="view-container" id="view-container">
+		<img class="view-container__image" id="view-container-image" alt="image" src="">
+		<time class="showTimeToWork" id="showTimeToWork"></time>
+	</article>
+	<p class="text" id="text"></p>
+
+	<script>
+		const fs = require('fs');
+		const path = require('path');
+		const settings = require('./settings.json');
+		const additionalFeatures = settings.additionalFeatures;
+
+		function getEnableAdditionalFeatures(item) {
+			return item.isEnable;
+		}
+
+		const listOfEnabledFeatures = additionalFeatures.filter(getEnableAdditionalFeatures);
+
+		function readDir(dirName) {
+			const pathToImages = path.join(process.cwd(), 'images', dirName);
+			return fs.readdirSync(pathToImages);
+		}
+
+		function getAllImages(total, currentValue, currentIndex, arr) {
+			const directoryName = currentValue.idText
+			const imagesList = readDir(directoryName);
+			const imagesWithAbsolutePath = imagesList.map(img => path.join(process.cwd(), 'images', directoryName, img));
+			return total.concat(imagesWithAbsolutePath);
+		}
+
+		const listOfImages = listOfEnabledFeatures.reduce(getAllImages, []);
+		const numberOfImages = listOfImages.length;
+
+		function randomNumber(min, max) { 
+		    return Math.floor(Math.random() * (max - min + 1)) + min;
+		}
+
+		function selectImageForShow() {
+			const num = randomNumber(0, numberOfImages - 1);
+			return listOfImages[num];
+		}
+
+		function renderImage() {
+			const imageToShow = selectImageForShow();
+			const viewContainerImage = document.getElementById('view-container-image');
+			viewContainerImage.src = imageToShow;
+		}
+
+		function renderTime(timeToWork) {
+			const showTimeToWork = document.getElementById('showTimeToWork');
+			timeToWork > 1
+				? showTimeToWork.textContent = `${timeToWork} minutes is left...`
+				: showTimeToWork.textContent = `${timeToWork} minute is left...`;
+		}
+
+		function renderText(text) {
+			const textElement = document.getElementById('text');
+			textElement.textContent = text;
+		}
+
+		try {
+			const settingsFile = require('./settings.json');
+			if (settingsFile) {
+				const timeToWork = settingsFile.hideLayout;
+				renderImage();
+				renderTime(timeToWork);
+			}
+		} catch(err) {
+			console.error(err);
+		}
+
+	</script>
+
+</body>
+</html>
