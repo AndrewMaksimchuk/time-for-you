@@ -1,47 +1,75 @@
 <!DOCTYPE html>
 <html lang="en">
-<head>
-	<meta charset="UTF-8">
-	<meta name="viewport" content="width=device-width, initial-scale=1.0">
-	<title>Settings</title>
-	<link rel="stylesheet" href="../../styles/global.css">
-	<link rel="stylesheet" href="settings.css">
-	<script src="../../libs/vue.global.js"></script>
-</head>
-<body class="body">
-	<h1>Settings</h1>
-	<div class="app" id="app"></div>
-	<script>
-		const fs = require('fs');
-		const path = require('path');
-		const { ipcRenderer } = require('electron');
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Settings</title>
+    <link rel="stylesheet" href="../../styles/global.css" />
+    <link rel="stylesheet" href="settings.css" />
+    <script src="../../libs/vue.global.js"></script>
+  </head>
+  <body class="body">
+    <h1>Settings</h1>
+    <div class="app" id="app"></div>
+    <script>
+      const fs = require("fs");
+      const path = require("path");
+      const { ipcRenderer } = require("electron");
 
-		const pathToSettingsFile = path.join(process.cwd(), 'settings.json');
+      const pathToSettingsFile = path.join(process.cwd(), "settings.json");
 
-		let settingsFile = null;
-		try {
-			settingsFile = require(pathToSettingsFile);
-		} catch(err) {
-			console.error(err);
-		}
+      let settingsFile = {};
+      try {
+        settingsFile = require(pathToSettingsFile);
+      } catch (err) {
+        console.error(err);
+      }
 
-		const app = Vue.createApp({
-			data() {
-				return {
-					showTime: null,
-					hideTime: null,
-				}
-			},
-			computed: {
-				showTimeNumber() {
-					return parseInt(this.showTime);
-				},
-				hideTimeNumber() {
-					return parseInt(this.hideTime);
-				},
-			},
-			template: 
-				`
+      function readSettingsFile() {
+        const data = fs.readFileSync(pathToSettingsFile, "utf8");
+        settingsFile = JSON.parse(data);
+        console.log(settingsFile);
+      }
+
+      function updateSettingsFile() {
+        try {
+          fs.writeFileSync(pathToSettingsFile, JSON.stringify(settingsFile));
+        } catch (error) {
+          console.error(error);
+        }
+      }
+
+      function updateAndReadSettingsFile() {
+        updateSettingsFile();
+        readSettingsFile();
+      }
+
+      function reloadPage() {
+        setTimeout(() => document.location.reload(), 0);
+      }
+
+      const app = Vue.createApp({
+        data() {
+          return {
+            showTime: null,
+            hideTime: null,
+          };
+        },
+        computed: {
+          showTimeNumber() {
+            return parseInt(this.showTime);
+          },
+          hideTimeNumber() {
+            return parseInt(this.hideTime);
+          },
+          showTime() {
+            return this.getSettingsFile.showLayout;
+          },
+          hideTime() {
+            return this.getSettingsFile.hideLayout;
+          },
+        },
+        template: `
 				<section class="settings">
 					<label for="showTime">Set the time(minutes) for a short break: </label>
 					<input 
@@ -57,72 +85,113 @@
 						max="60"
 						id="hideTime" 
 						v-model="hideTime">
-					<SelectAdditionalFeatures />
+
+					<SelectGender/>
+					<SelectAdditionalFeatures/>
+					<SelectSportFeatures/>
+
 					<ButtonSaveClose 
 						:showTime="showTimeNumber"
 						:hideTime="hideTimeNumber"/>
 				</section>
 				`,
-			created() {
-				if (settingsFile) {
-					this.showTime = settingsFile.showLayout;
-					this.hideTime = settingsFile.hideLayout;
-				}
-			},
+        created() {
+          if (settingsFile) {
+            this.showTime = settingsFile.showLayout;
+            this.hideTime = settingsFile.hideLayout;
+          }
+        },
+      });
 
-		});
+      app.component("ButtonSaveClose", {
+        data() {
+          return {
+            title: "Save and close settings",
+          };
+        },
+        props: {
+          showTime: {
+            type: Number,
+            required: true,
+          },
+          hideTime: {
+            type: Number,
+            required: true,
+          },
+        },
+        template: '<button @click="saveAndClose">{{ title }}</button>',
+        methods: {
+          saveAndClose() {
+            settingsFile.showLayout = this.showTime;
+            settingsFile.hideLayout = this.hideTime;
+            updateSettingsFile();
+            ipcRenderer.send("settings", { type: "close" });
+          },
+        },
+      });
 
-		app.component('ButtonSaveClose', {
-			data() {
-				return {
-					title: 'Save and close settings',
-				};
-			},
-			props: {
-				showTime: {
-					type: Number,
-					required: true,
-				},
-				hideTime: {
-					type: Number,
-					required: true,
-				},
-			},
-			template: '<button @click="saveAndClose">{{ title }}</button>',
-			methods: {
-				saveAndClose() {
-					settingsFile.showLayout = this.showTime;
-					settingsFile.hideLayout = this.hideTime;
-					try {
-					  const data = fs.writeFileSync('./settings.json', JSON.stringify(settingsFile));
-					} catch (err) {
-					  console.error(err);
-					}
-					ipcRenderer.send('settings', { type: 'close' });
-				},
-			},
-		});
+      app.component("SelectGender", {
+        data() {
+          return {
+            gender: null,
+          };
+        },
+        template: `
+				<div>
+					<h2>Select gender: </h2>
+					<input
+						type="radio"
+						name="selectSex"
+						id="man"
+						value="man"
+						v-model="gender">
+					<label for="man">Man</label>
 
-		app.component('AdditionalFeaturesItem', {
-			props: {
-				index: {
-					type: Number,
-					required: true,
-				},
-				idText: {
-					type: String,
-					required: true,
-				},
-				labelText: {
-					type: String,
-					required: true,
-				},
-				isChecked: {
-					type: Boolean,
-					required: true,
-				},
-			},
-			template: `
+					<input
+						type="radio"
+						name="selectSex"
+						id="woman"
+						value="woman"
+						v-model="gender">
+					<label for="woman">Woman</label>
+						
+				</div>
+			`,
+        created() {
+          this.gender = settingsFile.sex;
+        },
+        watch: {
+          gender() {
+            this.changeGendor();
+          },
+        },
+        methods: {
+          changeGendor() {
+            settingsFile.sex = this.gender;
+          },
+        },
+      });
+
+      app.component("AdditionalFeaturesItem", {
+        props: {
+          index: {
+            type: Number,
+            required: true,
+          },
+          idText: {
+            type: String,
+            required: true,
+          },
+          labelText: {
+            type: String,
+            required: true,
+          },
+          isChecked: {
+            type: Boolean,
+            required: true,
+          },
+        },
+        template: `
 				<div>
 					<input 
 						type="checkbox" 
@@ -132,27 +201,27 @@
 						@click="changeFeatureSetup($event)">
 					<label :for="idText">{{ labelText }}</label>
 				</div>`,
-			methods: {
-				changeFeatureSetup(e) {
-					let isEnable = null;
-					const value = e.target.value;
-					value === 'true' ? isEnable = false : isEnable = true;
-					if (settingsFile) {
-						settingsFile.additionalFeatures[this.index].isEnable = isEnable;
-					}
-				},
-			},
-		});
+        methods: {
+          changeFeatureSetup(e) {
+            let isEnable = null;
+            const value = e.target.value;
+            value === "true" ? (isEnable = false) : (isEnable = true);
+            if (settingsFile) {
+              settingsFile.additionalFeatures[this.index].isEnable = isEnable;
+            }
+          },
+        },
+      });
 
-		app.component('SelectAdditionalFeatures', {
-			data() {
-				return {
-					additionalFeatures: null,
-				};
-			},
-			template: `
+      app.component("SelectAdditionalFeatures", {
+        data() {
+          return {
+            additionalFeatures: null,
+          };
+        },
+        template: `
 				<div class="additional-features">
-					
+					<h2>Select additional features: </h2>
 					<AdditionalFeaturesItem 
 						v-for="(item, index) in additionalFeatures" 
 						:key="index" 
@@ -162,15 +231,135 @@
 						:isChecked="item.isEnable"/>
 				</div>
 			`,
-			created() {
-				if (settingsFile) {
-					this.additionalFeatures = settingsFile.additionalFeatures;
-				}
-			},
-		});
+        created() {
+          if (settingsFile) {
+            this.additionalFeatures = settingsFile.additionalFeatures;
+          }
+        },
+      });
 
-		const vm = app.mount('#app');
-	</script>
-</body>
+      app.component("SelectSportFeatures", {
+        data() {
+          return {
+            sportFeatures: null,
+          };
+        },
+        template: `
+				<div class="sport-features">
+					<h2>Select sport features: </h2>
+					<div class="sport-features__lists">
+
+						<ul>
+							<h3>Without equipment</h3>
+							<li
+								v-for="(item, index) in sportFeaturesToDisplayWithoutEquipment"
+								:key="index">
+									<SportFeaturesItem
+										:feature="item"
+										:index="index"
+										:gender="genderIs"/>
+							</li>
+						</ul>
+
+						<ul>
+							<h3>With equipment</h3>
+							<li
+								v-for="(item, index) in sportFeaturesToDisplayWithEquipment"
+								:key="index">
+									<SportFeaturesItem
+										:feature="item"
+										:index="index"
+										:gender="genderIs"/>
+							</li>
+						</ul>
+
+					</div>
+				</div>
+			`,
+        computed: {
+          genderIs() {
+            return settingsFile.sex;
+          },
+          sportFeaturesToDisplay() {
+            if (this.genderIs === "man") {
+              return this.sportFeatures.man;
+            }
+            return this.sportFeatures.woman;
+          },
+          sportFeaturesToDisplayWithEquipment() {
+            return this.sportFeaturesToDisplay.withEquipment;
+          },
+          sportFeaturesToDisplayWithoutEquipment() {
+            return this.sportFeaturesToDisplay.withoutEquipment;
+          },
+        },
+        created() {
+          if (settingsFile) {
+            this.sportFeatures = settingsFile.sportFeatures;
+          }
+        },
+      });
+
+      app.component("SportFeaturesItem", {
+        props: {
+          index: {
+            type: Number,
+            required: true,
+          },
+          feature: {
+            type: Object,
+            required: true,
+          },
+          gender: {
+            type: String,
+            required: true,
+          },
+        },
+        template: `
+				<div>
+					<input 
+						type="checkbox" 
+						:id="feature.idText" 
+						:value="feature.isEnable" 
+						:checked="feature.isEnable" 
+						@click="changeFeatureSetup($event)">
+					<label :for="feature.idText">{{ feature.labelText }}</label>
+				</div>`,
+        created() {
+          console.log(this.$props);
+        },
+        methods: {
+          changeFeatureSetup(e) {
+            let isEnable = null;
+            const value = e.target.value;
+            value === "true" ? (isEnable = false) : (isEnable = true);
+            if (settingsFile) {
+              if (this.gender === "man") {
+                if (feature.withEquipment) {
+                  settingsFile.sportFeatures.man.withEquipment[index].isEnable =
+                    isEnable;
+                } else {
+                  settingsFile.sportFeatures.man.withoutEquipment[
+                    index
+                  ].isEnable = isEnable;
+                }
+              } else {
+                if (feature.withEquipment) {
+                  settingsFile.sportFeatures.woman.withEquipment[
+                    index
+                  ].isEnable = isEnable;
+                } else {
+                  settingsFile.sportFeatures.woman.withoutEquipment[
+                    index
+                  ].isEnable = isEnable;
+                }
+              }
+            }
+          },
+        },
+      });
+
+      const vm = app.mount("#app");
+    </script>
+  </body>
 </html>
-

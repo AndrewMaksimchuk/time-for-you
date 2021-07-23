@@ -1,7 +1,8 @@
 // Modules to control application life and create native browser window
 const { app, BrowserWindow, Menu, Tray, ipcMain } = require('electron');
-const fs = require('fs');
-// const path = require('path');
+// const fs = require('fs');
+
+const isDevToolsEnable = false;
 
 let mainWindow = null;
 const settings = {
@@ -22,10 +23,13 @@ function createWindow () {
       nodeIntegration: true,
       contextIsolation: false,
     },
+    icon: './images/icons/sand-clock.png',
   });
   mainWindow.setResizable(false);
   mainWindow.loadFile('index.html');
-  mainWindow.webContents.openDevTools();
+  if (isDevToolsEnable) {
+    mainWindow.webContents.openDevTools();
+  }
 }
 
 // Menu small
@@ -65,11 +69,13 @@ try {
 // let inBreak = false;
 
 function hideLayout() {
+  mainWindow.reload();
   mainWindow.hide();
   setTimeout(showLayout, layoutTime.timeToShowLayout);
 }
 
 function showLayout() {
+  // mainWindow.reload();
   mainWindow.show();
   setTimeout(hideLayout, layoutTime.timeToHideLayout);
 }
@@ -96,8 +102,10 @@ function takeBreak() {
 function openWindowSettings() {
   // Open new window with all settings
   const options = {
-    width: 350,
-    // height: 600,
+    width: 700,
+    height: 850,
+    minWidth: 700,
+    minHeight: 500,
     parent: mainWindow,
     icon: './images/icons/sand-clock.png',
     autoHideMenuBar: true,
@@ -110,7 +118,9 @@ function openWindowSettings() {
   settings.window = childSettingsWindow;
   childSettingsWindow.loadFile('./windows/settings/settings.html');
   childSettingsWindow.show();
-  childSettingsWindow.webContents.openDevTools();
+  if (isDevToolsEnable) {
+    childSettingsWindow.webContents.openDevTools();
+  }
 }
 
 // This method will be called when Electron has finished

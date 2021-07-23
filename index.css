@@ -18,6 +18,10 @@
 	color: white;
 }
 
+.view-container__image {
+	max-width: 50vh;
+}
+
 .showTimeToWork {
 	font-size: 2rem;
 	color: #fff;

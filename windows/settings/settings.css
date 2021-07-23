@@ -1,3 +1,28 @@
+/* scrollbar */
+::-webkit-scrollbar {
+	width: 10px;
+	padding-right: 5px;
+	margin-right: 10px;
+  }
+  
+  ::-webkit-scrollbar-track {
+	background: transparent;
+	
+  }
+  
+  ::-webkit-scrollbar-thumb {
+	background: var(--color-3);
+	border-radius: 5px;
+  }
+  
+  ::-webkit-scrollbar-thumb:hover {
+	background: #555;
+  }
+
+.body {
+	overflow-y: scroll;
+}
+
 .settings {
 	display: flex;
 	flex-direction: column;
@@ -7,4 +32,8 @@
 	display: flex;
 	flex-wrap: wrap;
 	align-items: baseline;
+}
+
+.sport-features__lists {
+	display: flex;
 }
